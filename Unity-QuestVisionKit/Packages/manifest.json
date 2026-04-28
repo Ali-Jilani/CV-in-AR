@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.meta.xr.mrutilitykit": "83.0.4",
     "com.meta.xr.sdk.core": "83.0.4",
     "com.unity.ai.inference": "2.3.0",

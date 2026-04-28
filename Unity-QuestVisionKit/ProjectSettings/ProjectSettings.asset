@@ -148,6 +148,7 @@ PlayerSettings:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 11400000, guid: 5d826038237f5496fbd76f720ad11943, type: 2}
+  - {fileID: 11400000, guid: 6e6e311c47fc74e4ca0112d255192698, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -844,7 +845,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: ISDK_OPENXR_HAND;USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS
+    Android: ISDK_OPENXR_HAND;USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS;OVR_DISABLE_HAND_PINCH_BUTTON_MAPPING
     EmbeddedLinux: 
     GameCoreScarlett: 
     GameCoreXboxOne: 
@@ -854,7 +855,7 @@ PlayerSettings:
     PS5: 
     QNX: 
     ReservedCFE: 
-    Standalone: ISDK_OPENXR_HAND;USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS
+    Standalone: ISDK_OPENXR_HAND;USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS;OVR_DISABLE_HAND_PINCH_BUTTON_MAPPING
     VisionOS: 
     Windows Store Apps: USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS
     XboxOne: 
