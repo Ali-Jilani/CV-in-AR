@@ -7,9 +7,8 @@ Quick context to pick this up tomorrow. Full design lives at `LEGO_DESIGN.md`.
 An extension to the **ObjectDetection** sample. New scene: `Samples/2 ObjectDetection/Lego/Scenes/LegoAssembly.unity`. It guides a user through an ordered Lego build, outlining real bricks in passthrough:
 
 - **Red** = brick type required for the current step
-- **Yellow** = recognised Lego, but not what's needed now
 - **Green** (pulse) = correctly placed
-- **Grey** = previously placed
+- **Grey** = any other recognised Lego — already placed, or not the current target
 
 Step 1 commits when the right brick is held still ~1 s. Steps 2+ commit when the right brick is detected within `proximityTolerance` (default 0.10 m) of the previous step's last-known position. Per-frame commit lock prevents cascading.
 
@@ -74,3 +73,4 @@ If detections are noisy, re-run **Tools → Lego → Wrap YOLOv11 ONNX with NMS*
 
 - `LegoHighlight.prefab`, the four `.mat` files, and the four script `.meta` files were authored as YAML by Claude (not via Unity Editor). They imported cleanly, but if Unity ever flags a missing-reference on these, the GUIDs to check are `1eda000000000000000000000000a001` through `…a00a` (see the `.meta` files).
 - The first-step debounce (`_firstStepHoldSeconds = 1.0`, `_firstStepStillnessRadius = 0.03 m`) is in `LegoBuildManager` — bump those if the chime keeps misfiring.
+- Android signing uses `Unity-QuestVisionKit/Keys/quest-debug.keystore` (gitignored), alias `quest-debug`, password `questdebug`. The keystore file does not sync via git. **When setting up a new machine** (e.g. switching between the Windows tower and the MacBook), copy the keystore file from a machine that already has it (AirDrop / scp / USB) into the same path on the new machine. Do **not** regenerate it via the menu unless every machine has lost the file: `keytool` produces a fresh keypair every invocation, so a regenerated keystore is a different key and the Quest will reject the next build with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. The menu item **Tools → Lego → Set Up Quest Debug Keystore** (`Assets/Editor/SetupQuestKeystore.cs`) is for first-time setup or full disaster recovery — accept that the first Quest install after a regenerated keystore triggers one uninstall+reinstall dialog and a `HEADSET_CAMERA` permission re-grant.

@@ -4,12 +4,11 @@
 
 The user wants to extend the existing **ObjectDetection** sample (`Unity-QuestVisionKit/Assets/Samples/2 ObjectDetection/`) into a guided Lego-assembly experience on Quest 3. The current sample runs YOLOv9 (Sentis) trained on COCO-80 and renders generic markers over any detected object — it has no concept of "task," "step," or "correctness."
 
-The new feature guides a user through an ordered sequence of brick placements. As the user works, each detected brick is outlined in passthrough with one of four colors:
+The new feature guides a user through an ordered sequence of brick placements. As the user works, each detected brick is outlined in passthrough with one of three colors:
 
 - **Red** — the brick type required for the *current* step
-- **Yellow** — a recognized Lego brick that isn't needed at this step (distractor)
 - **Green** — pulses for ~1 s when a brick is correctly placed (right type, within spatial tolerance of the previous step's brick)
-- **Grey** — a brick already correctly placed in a prior step
+- **Grey** — any other recognized Lego brick: already placed in a prior step, or recognized but not what the current step needs (distractor)
 
 Brainstorming decisions (all locked in by the user):
 
@@ -19,7 +18,7 @@ Brainstorming decisions (all locked in by the user):
 | Visual guide form | In-world outlines on real bricks only — **no** ghost preview, **no** floating panel. |
 | Verification | **Spatial proximity**: step 1 = presence; step *N* ≥ 2 = required type detected within `proximityTolerance` (default 10 cm) of step *N−1*'s last-known world position. |
 | Recipe authoring | Hardcoded `List<BuildStep>` field on the manager script (no ScriptableObject, no JSON). |
-| Distractors | Recognized non-target bricks → **yellow** outline. |
+| Distractors | Recognized non-target bricks → **grey** outline (same as already-placed). |
 | Completion | Chime + brief flash, then idle. No auto-reset, no panel. Restart by re-running the scene. |
 
 The existing `ObjectDetection.unity` scene must remain untouched — this work lands as a parallel scene + parallel scripts under a new subfolder so the original sample keeps demonstrating generic COCO detection.

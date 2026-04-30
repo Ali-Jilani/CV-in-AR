@@ -75,7 +75,7 @@ public class LegoBuildManager : MonoBehaviour
 
         if (className != current.brickClass)
         {
-            return IsLegoClass(className) ? BrickHighlightState.Yellow : BrickHighlightState.Hidden;
+            return IsLegoClass(className) ? BrickHighlightState.Grey : BrickHighlightState.Hidden;
         }
 
         if (_lastCommitFrame == Time.frameCount)
