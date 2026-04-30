@@ -21,40 +21,30 @@ The original `ObjectDetection.unity` is untouched.
 - Scripts compile cleanly (`LegoDetector`, `LegoBrickHighlightRenderer`, `LegoBuildManager`, `LegoBrickHighlight`)
 - 4 state materials (Red / Yellow / Green / Grey) under `Lego/Materials/`
 - `LegoHighlight.prefab` (quad + script + materials wired)
-- `Resources/LegoClasses.txt` — placeholder class names
-- `LegoAssembly.unity` scene duplicated and wired up via MCP:
-  - Detection GameObject: `LegoDetector` + `LegoBrickHighlightRenderer` (with prefab + BuildManager refs set)
-  - `BuildManager` GameObject: `LegoBuildManager` + `AudioSource` (`PlayOnAwake = false`)
-  - Recipe pre-populated with placeholder steps: `red_2x4 → blue_2x2 → red_2x4`, all 0.10 m tolerance
-  - `_successChime` references the sibling AudioSource
+- `Resources/LegoClasses.txt` — 5 model classes (Blue / Green / Orange / Step 2 Structure / Final Structure)
+- `LegoAssembly.unity` scene wired:
+  - Detection GameObject: `LegoDetector` (`sentisModel` → `Lego/Resources/blocks.sentis`) + `LegoBrickHighlightRenderer`
+  - `BuildManager` GameObject: `LegoBuildManager` + `AudioSource` (`ReceiveResponse.wav`, `PlayOnAwake = false`)
+  - Recipe: `Blue Lego Block → Step 2 Structure → Final Structure`, all 0.10 m tolerance
+- Custom YOLOv11 model: `Lego/Resources/blocks.onnx` (raw Ultralytics export) + `blocks.sentis` (NMS-wrapped, 3-output graph matching `LegoDetector`'s `PeekOutput(0..2)` contract)
+- Editor utility: `Assets/Editor/YoloOnnxToSentisWrapper.cs` (menu **Tools → Lego → Wrap YOLOv11 ONNX with NMS**) — re-runnable any time the source ONNX is replaced
 
 ### Remaining
 
-1. **(REQUIRED) Wire the audio clip.** MCP couldn't persist this — has to be done by hand.
-   - Open `LegoAssembly.unity`
-   - Select `BuildManager` in the Hierarchy
-   - Drag `Assets/Samples/5 ImageLLM/Audio/ReceiveResponse.wav` onto the `AudioSource → AudioClip` slot
-
-2. **(REQUIRED for real detection) Replace the placeholder model.**
-   - `LegoDetector → Sentis Model` currently points at the COCO `yolov9sentis.sentis` — it won't recognise Lego bricks
-   - Drop your custom-trained Lego `.sentis` into `Lego/Resources/`
-   - Drag onto `LegoDetector → Sentis Model`
-   - Update `Lego/Resources/LegoClasses.txt` so each line matches a class index from your model
-   - Update the recipe `brickClass` strings in `BuildManager → LegoBuildManager → _recipe` to match
-
-3. **Add to Build Settings.** File → Build Settings → add `LegoAssembly.unity`, uncheck `ObjectDetection.unity` if you want this to be the default scene on device.
+1. **Add to Build Settings.** File → Build Settings → add `LegoAssembly.unity`, uncheck `ObjectDetection.unity` if you want this to be the default scene on device.
 
 ## Verification (on Quest 3, PCA needs the device)
 
 1. Three loose bricks on a table:
-   - Step-1 brick → **red**
-   - Step-2 and step-3 bricks → **yellow**
-   - Non-Lego objects → no outline
-2. Hold step-1 brick still for ~1 s → chime + green pulse → settles to grey. Step-2 brick now turns red.
-3. Place step-2's brick > 10 cm from step-1 → stays **red** (no chime). Move within 10 cm → green pulse, step-3 turns red.
-4. After final step → chime, then idle.
+   - Blue brick → **red** outline
+   - Green & Orange bricks → **yellow** outlines (recognised Lego, not the current target)
+2. Hold the Blue brick still for ~1 s → chime + green pulse → settles to grey. Green/Orange remain yellow.
+3. Place the Green brick adjacent to the Blue (within 10 cm of Blue's last-known position) — the model now sees the partial assembly as `Step 2 Structure` → red flicker → green pulse → chime → grey.
+4. Add the Orange brick to make the full build → model fires `Final Structure` near the previous step's position → green pulse → chime → idle.
 5. Smoke check: `adb logcat -s Unity` should show `[LegoDetector] Passthrough texture ready: ...` followed by detection events at ~10 Hz.
-6. Regression: original `ObjectDetection.unity` should still build and run normally.
+6. Regression: original `Samples/2 ObjectDetection/ObjectDetection.unity` should still build and run normally (untouched, separate `yolov9sentis.sentis`).
+
+If detections are noisy, re-run **Tools → Lego → Wrap YOLOv11 ONNX with NMS** after editing `IouThreshold` / `ScoreThreshold` constants in `YoloOnnxToSentisWrapper.cs` (defaults 0.45 / 0.25).
 
 ## Key file paths
 
@@ -63,6 +53,8 @@ The original `ObjectDetection.unity` is untouched.
 - Prefab: `Unity-QuestVisionKit/Assets/Samples/2 ObjectDetection/Lego/Prefabs/LegoHighlight.prefab`
 - Materials: `Unity-QuestVisionKit/Assets/Samples/2 ObjectDetection/Lego/Materials/`
 - Class labels: `Unity-QuestVisionKit/Assets/Samples/2 ObjectDetection/Lego/Resources/LegoClasses.txt`
+- Detection model: `Unity-QuestVisionKit/Assets/Samples/2 ObjectDetection/Lego/Resources/blocks.sentis` (NMS-wrapped) + `blocks.onnx` (raw)
+- NMS wrapper utility: `Unity-QuestVisionKit/Assets/Editor/YoloOnnxToSentisWrapper.cs`
 - Full plan: `LEGO_DESIGN.md` (repo root)
 
 ## Known caveats

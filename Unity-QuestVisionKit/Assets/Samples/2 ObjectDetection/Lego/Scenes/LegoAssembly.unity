@@ -618,11 +618,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LegoBuildManager
   _recipe:
-  - brickClass: red_2x4
+  - brickClass: Blue Lego Block
     proximityTolerance: 0.1
-  - brickClass: blue_2x2
+  - brickClass: Step 2 Structure
     proximityTolerance: 0.1
-  - brickClass: red_2x4
+  - brickClass: Final Structure
     proximityTolerance: 0.1
   _firstStepHoldSeconds: 1
   _firstStepStillnessRadius: 0.03
@@ -1627,7 +1627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eda000000000000000000000000a001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LegoDetector
-  sentisModel: {fileID: 5022602860645237092, guid: 437372f7f3502304a9908210aee5b332, type: 3}
+  sentisModel: {fileID: 5022602860645237092, guid: b1a3a453e5cad9b49b01b08ab30a126b, type: 3}
   backend: 512
   inferenceInterval: 0.1
   kLayersPerFrame: 20

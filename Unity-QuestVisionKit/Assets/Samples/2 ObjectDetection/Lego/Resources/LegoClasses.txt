@@ -1,8 +1,5 @@
-red_2x4
-red_2x2
-blue_2x4
-blue_2x2
-yellow_2x4
-yellow_2x2
-green_2x4
-green_2x2
+Blue Lego Block
+Final Structure
+Green Lego Block
+Orange Lego Block
+Step 2 Structure
