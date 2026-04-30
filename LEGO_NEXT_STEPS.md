@@ -28,10 +28,23 @@ The original `ObjectDetection.unity` is untouched.
   - Recipe: `Blue Lego Block → Step 2 Structure → Final Structure`, all 0.10 m tolerance
 - Custom YOLOv11 model: `Lego/Resources/blocks.onnx` (raw Ultralytics export) + `blocks.sentis` (NMS-wrapped, 3-output graph matching `LegoDetector`'s `PeekOutput(0..2)` contract)
 - Editor utility: `Assets/Editor/YoloOnnxToSentisWrapper.cs` (menu **Tools → Lego → Wrap YOLOv11 ONNX with NMS**) — re-runnable any time the source ONNX is replaced
+- Build Settings: `LegoAssembly.unity` enabled, `ObjectDetection.unity` disabled (see `EditorBuildSettings.asset`)
+- End-to-end run on Quest 3: build deploys, detection works, recipe advances correctly through all three steps
 
-### Remaining
+### Next session: UX fixes from on-device test
 
-1. **Add to Build Settings.** File → Build Settings → add `LegoAssembly.unity`, uncheck `ObjectDetection.unity` if you want this to be the default scene on device.
+The build runs end-to-end on Quest 3. Two things to polish before this is shippable:
+
+1. **No visual cue for the next brick to pick up.** Steps 2 and 3 commit on `Step 2 Structure` / `Final Structure` — classes that only fire once the partial/full assembly exists. While the user is reaching for the next brick (Green for step 2, Orange for step 3), nothing on screen says *that's the one*. The brick shows yellow alongside every other recognised-but-not-target Lego.
+
+   **Fix sketch.** Extend `LegoBuildManager.BuildStep` with an optional `indicatorClass: string`. In `Classify()` (`LegoBuildManager.cs:62-102`), when `className` matches the current step's `indicatorClass`, return `BrickHighlightState.Red` (no commit). Then in `LegoAssembly.unity` set:
+   - Step 1 (`Blue Lego Block`) — indicator empty (Blue itself is already the target)
+   - Step 2 (`Step 2 Structure`) — indicator `Green Lego Block`
+   - Step 3 (`Final Structure`) — indicator `Orange Lego Block`
+
+2. **Commit chime fires too quickly on steps 2+.** Step 1 has a 1 s stillness hold (`_firstStepHoldSeconds`); steps 2+ commit on the first frame the proximity check passes (`LegoBuildManager.cs:96-100`). The chime feels jumpy and a fleeting misdetection can advance the build.
+
+   **Fix sketch.** Add `_subsequentStepHoldSeconds` (default ~1.5 s) on `LegoBuildManager`. In the step 2+ branch require the matching detection to stay within `proximityTolerance` of the previous step's position for that whole duration before `CommitStep`. Mirrors `TryCommitFirstStep` (`LegoBuildManager.cs:104-129`) — pull a shared helper if it stays clean.
 
 ## Verification (on Quest 3, PCA needs the device)
 
