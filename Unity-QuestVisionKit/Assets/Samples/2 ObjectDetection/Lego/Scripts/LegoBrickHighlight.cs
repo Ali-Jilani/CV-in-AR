@@ -18,6 +18,7 @@ public class LegoBrickHighlight : MonoBehaviour
 
     private Coroutine _pulseCoroutine;
     private Vector3 _baseScale;
+    private BrickHighlightState _lastState = BrickHighlightState.Hidden;
 
     private void Awake()
     {
@@ -25,6 +26,11 @@ public class LegoBrickHighlight : MonoBehaviour
         {
             meshRenderer = GetComponentInChildren<MeshRenderer>();
         }
+    }
+
+    private void OnEnable()
+    {
+        _lastState = BrickHighlightState.Hidden;
     }
 
     public void SetState(BrickHighlightState state)
@@ -44,7 +50,10 @@ public class LegoBrickHighlight : MonoBehaviour
                 break;
             case BrickHighlightState.Green:
                 meshRenderer.sharedMaterial = greenMaterial;
-                StartPulse();
+                if (_lastState != BrickHighlightState.Green)
+                {
+                    StartPulse();
+                }
                 break;
             case BrickHighlightState.Grey:
                 meshRenderer.sharedMaterial = greyMaterial;
@@ -53,6 +62,7 @@ public class LegoBrickHighlight : MonoBehaviour
                 gameObject.SetActive(false);
                 break;
         }
+        _lastState = state;
     }
 
     private void StartPulse()

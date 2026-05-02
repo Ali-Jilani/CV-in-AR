@@ -620,12 +620,16 @@ MonoBehaviour:
   _recipe:
   - brickClass: Blue Lego Block
     proximityTolerance: 0.1
+    indicatorClass:
   - brickClass: Step 2 Structure
     proximityTolerance: 0.1
+    indicatorClass: Green Lego Block
   - brickClass: Final Structure
     proximityTolerance: 0.1
+    indicatorClass: Orange Lego Block
   _firstStepHoldSeconds: 1
   _firstStepStillnessRadius: 0.03
+  _subsequentStepHoldSeconds: 1.5
   _successChime: {fileID: 823596417}
 --- !u!4 &823596419
 Transform:

@@ -18,6 +18,7 @@ public class LegoBuildManager : MonoBehaviour
     {
         public string brickClass;
         public float proximityTolerance;
+        public string indicatorClass;
     }
 
     [Header("Recipe (ordered list of bricks the user must place)")]
@@ -25,10 +26,12 @@ public class LegoBuildManager : MonoBehaviour
     [SerializeField] private List<BuildStep> _recipe = new();
 
     [Header("Step 1 debounce")]
-    [Tooltip("How long the first brick must be held still before step 1 commits. Subsequent steps commit immediately on the first frame the proximity check passes.")]
+    [Tooltip("How long the first brick must be held still before step 1 commits.")]
     [SerializeField] private float _firstStepHoldSeconds = 1.0f;
     [Tooltip("Tolerance in metres for the position-stillness check during the first-step hold.")]
     [SerializeField] private float _firstStepStillnessRadius = 0.03f;
+    [Tooltip("How long the matching detection must stay within proximityTolerance of the previous step's position before steps 2+ commit.")]
+    [SerializeField] private float _subsequentStepHoldSeconds = 1.5f;
 
     [Header("Audio")]
     [SerializeField] private AudioSource _successChime;
@@ -42,6 +45,9 @@ public class LegoBuildManager : MonoBehaviour
     private Vector3 _firstStepCandidatePos;
     private float _firstStepCandidateSince;
     private bool _firstStepHasCandidate;
+
+    private float _subsequentStepCandidateSince;
+    private bool _subsequentStepHasCandidate;
 
     public int CurrentStep => _currentStep;
     public bool IsComplete => _currentStep >= _recipe.Count;
@@ -68,6 +74,10 @@ public class LegoBuildManager : MonoBehaviour
 
         if (IsComplete)
         {
+            if (IsRecipeClass(className))
+            {
+                return BrickHighlightState.Green;
+            }
             return IsLegoClass(className) ? BrickHighlightState.Grey : BrickHighlightState.Hidden;
         }
 
@@ -75,6 +85,14 @@ public class LegoBuildManager : MonoBehaviour
 
         if (className != current.brickClass)
         {
+            if (IsCompletedStepClass(className))
+            {
+                return BrickHighlightState.Yellow;
+            }
+            if (!string.IsNullOrEmpty(current.indicatorClass) && className == current.indicatorClass)
+            {
+                return BrickHighlightState.Red;
+            }
             return IsLegoClass(className) ? BrickHighlightState.Grey : BrickHighlightState.Hidden;
         }
 
@@ -93,9 +111,8 @@ public class LegoBuildManager : MonoBehaviour
         }
 
         var lastPos = _placedPositions[_currentStep - 1];
-        if (Vector3.Distance(worldPos, lastPos) <= current.proximityTolerance)
+        if (TryCommitSubsequentStep(worldPos, lastPos, current.proximityTolerance))
         {
-            CommitStep(worldPos);
             return BrickHighlightState.Green;
         }
         return BrickHighlightState.Red;
@@ -124,7 +141,27 @@ public class LegoBuildManager : MonoBehaviour
         }
 
         CommitStep(worldPos);
-        _firstStepHasCandidate = false;
+        return true;
+    }
+
+    private bool TryCommitSubsequentStep(Vector3 worldPos, Vector3 referencePos, float tolerance)
+    {
+        if (Vector3.Distance(worldPos, referencePos) > tolerance)
+        {
+            _subsequentStepHasCandidate = false;
+            return false;
+        }
+        if (!_subsequentStepHasCandidate)
+        {
+            _subsequentStepCandidateSince = Time.time;
+            _subsequentStepHasCandidate = true;
+            return false;
+        }
+        if (Time.time - _subsequentStepCandidateSince < _subsequentStepHoldSeconds)
+        {
+            return false;
+        }
+        CommitStep(worldPos);
         return true;
     }
 
@@ -133,6 +170,8 @@ public class LegoBuildManager : MonoBehaviour
         _placedPositions.Add(worldPos);
         _currentStep++;
         _lastCommitFrame = Time.frameCount;
+        _firstStepHasCandidate = false;
+        _subsequentStepHasCandidate = false;
         if (_successChime)
         {
             _successChime.Play();
@@ -146,5 +185,29 @@ public class LegoBuildManager : MonoBehaviour
             return true;
         }
         return _legoClassSet.Contains(className);
+    }
+
+    private bool IsCompletedStepClass(string className)
+    {
+        for (var i = 0; i < _currentStep; i++)
+        {
+            if (_recipe[i].brickClass == className)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool IsRecipeClass(string className)
+    {
+        for (var i = 0; i < _recipe.Count; i++)
+        {
+            if (_recipe[i].brickClass == className)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -21,12 +21,17 @@ public class LegoBrickHighlightRenderer : MonoBehaviour
     [Header("Filtering")]
     [SerializeField, Range(0f, 1f)] private float minConfidence = 0.15f;
 
+    [Header("Stabilisation")]
+    [Tooltip("Per-detection-cycle lerp factor for highlight pose (0 = frozen, 1 = snap to detection). Lower values feel more anchored but lag behind real motion. Applied after the GO has been seen for at least one cycle.")]
+    [SerializeField, Range(0f, 1f)] private float _highlightSmoothing = 0.25f;
+
     private Camera _mainCamera;
     private const float ModelInputSize = 640f;
     private PassthroughCameraAccess _cameraAccess;
     private EnvironmentRaycastManager _envRaycastManager;
     private string[] _labels = Array.Empty<string>();
     private readonly Dictionary<string, GameObject> _activeHighlights = new();
+    private readonly HashSet<string> _seenThisCycle = new();
 
     private void Awake()
     {
@@ -75,7 +80,7 @@ public class LegoBrickHighlightRenderer : MonoBehaviour
         }
 
         var numDetections = coords.shape[0];
-        ClearPreviousHighlights();
+        _seenThisCycle.Clear();
 
         var imageWidth = ModelInputSize;
         var imageHeight = ModelInputSize;
@@ -144,26 +149,54 @@ public class LegoBrickHighlightRenderer : MonoBehaviour
             var rotation = Quaternion.LookRotation(-surfaceNormal, Vector3.up);
 
             var lookupKey = className;
-            if (_activeHighlights.TryGetValue(lookupKey, out var existingGo) && existingGo != null)
+            if (_seenThisCycle.Contains(lookupKey))
             {
-                if (Vector3.Distance(existingGo.transform.position, worldPos) < mergeThreshold)
+                if (_activeHighlights.TryGetValue(lookupKey, out var primaryGo) && primaryGo != null
+                    && Vector3.Distance(primaryGo.transform.position, worldPos) < mergeThreshold)
                 {
-                    UpdateHighlight(existingGo, worldPos, rotation, scale, state);
                     continue;
                 }
                 lookupKey = $"{className}_{i}";
             }
 
-            var highlightGo = Instantiate(highlightPrefab);
-            UpdateHighlight(highlightGo, worldPos, rotation, scale, state);
-            _activeHighlights[lookupKey] = highlightGo;
+            var hadExisting = _activeHighlights.TryGetValue(lookupKey, out var highlightGo) && highlightGo != null;
+            var snap = !hadExisting || !highlightGo.activeSelf;
+            if (!hadExisting)
+            {
+                highlightGo = Instantiate(highlightPrefab);
+                _activeHighlights[lookupKey] = highlightGo;
+            }
+            if (!highlightGo.activeSelf)
+            {
+                highlightGo.SetActive(true);
+            }
+            UpdateHighlight(highlightGo, worldPos, rotation, scale, state, snap);
+            _seenThisCycle.Add(lookupKey);
+        }
+
+        foreach (var kv in _activeHighlights)
+        {
+            if (kv.Value && !_seenThisCycle.Contains(kv.Key) && kv.Value.activeSelf)
+            {
+                kv.Value.SetActive(false);
+            }
         }
     }
 
-    private static void UpdateHighlight(GameObject go, Vector3 position, Quaternion rotation, Vector3 scale, BrickHighlightState state)
+    private void UpdateHighlight(GameObject go, Vector3 position, Quaternion rotation, Vector3 scale, BrickHighlightState state, bool snap)
     {
-        go.transform.SetPositionAndRotation(position, rotation);
-        go.transform.localScale = scale;
+        if (snap || _highlightSmoothing >= 1f)
+        {
+            go.transform.SetPositionAndRotation(position, rotation);
+            go.transform.localScale = scale;
+        }
+        else
+        {
+            var t = Mathf.Clamp01(_highlightSmoothing);
+            go.transform.position = Vector3.Lerp(go.transform.position, position, t);
+            go.transform.rotation = Quaternion.Slerp(go.transform.rotation, rotation, t);
+            go.transform.localScale = Vector3.Lerp(go.transform.localScale, scale, t);
+        }
         var highlight = go.GetComponent<LegoBrickHighlight>();
         if (highlight)
         {
@@ -184,16 +217,29 @@ public class LegoBrickHighlightRenderer : MonoBehaviour
         return _labels[labelIndex];
     }
 
-    private void ClearPreviousHighlights()
+    private void OnDisable()
     {
-        foreach (var go in _activeHighlights.Values)
+        foreach (var kv in _activeHighlights)
         {
-            if (go)
+            if (kv.Value && kv.Value.activeSelf)
             {
-                Destroy(go);
+                kv.Value.SetActive(false);
+            }
+        }
+        _seenThisCycle.Clear();
+    }
+
+    private void OnDestroy()
+    {
+        foreach (var kv in _activeHighlights)
+        {
+            if (kv.Value)
+            {
+                Destroy(kv.Value);
             }
         }
         _activeHighlights.Clear();
+        _seenThisCycle.Clear();
     }
 
     private Vector2 DetectionToViewport(float normalizedX, float normalizedY)
