@@ -19,6 +19,7 @@ public class LegoBuildManager : MonoBehaviour
         public string brickClass;
         public float proximityTolerance;
         public string indicatorClass;
+        [TextArea(2, 4)] public string description;
     }
 
     [Header("Recipe (ordered list of bricks the user must place)")]
@@ -49,8 +50,13 @@ public class LegoBuildManager : MonoBehaviour
     private float _subsequentStepCandidateSince;
     private bool _subsequentStepHasCandidate;
 
+    public event System.Action<int> StepCommitted;
+    public event System.Action BuildCompleted;
+
     public int CurrentStep => _currentStep;
     public bool IsComplete => _currentStep >= _recipe.Count;
+    public int RecipeCount => _recipe.Count;
+    public string CurrentDescription => IsComplete || _recipe.Count == 0 ? string.Empty : _recipe[_currentStep].description;
 
     public void RegisterLegoClasses(IEnumerable<string> classNames)
     {
@@ -175,6 +181,11 @@ public class LegoBuildManager : MonoBehaviour
         if (_successChime)
         {
             _successChime.Play();
+        }
+        StepCommitted?.Invoke(_currentStep);
+        if (IsComplete)
+        {
+            BuildCompleted?.Invoke();
         }
     }
 
